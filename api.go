@@ -70,6 +70,52 @@ func (s *APIServer) handleCompletions(w http.ResponseWriter, r *http.Request) er
 }
 
 func (s *APIServer) handleStreamingCompletions(w http.ResponseWriter, r *http.Request) error {
+	var req Request
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		return err
+	}
+
+	w.Header().Set("Content-Type", "text/event-stream")
+	w.Header().Set("Cache-Control", "no-cache")
+	w.Header().Set("Connection", "keep-alive")
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+
+	flusher, ok := w.(http.Flusher)
+	if !ok {
+		return fmt.Errorf("streaming unsupported")
+	}
+
+	initialResponse := Response{
+		Id:      randomIdGenerator(),
+		Object:  "chat.completion",
+		Model:   "gpt-3.5-turbo",
+		Usage:   Usage{Prompt_tokens: len(req.Messages), Completion_tokens: 0, Total_tokens: len(req.Messages)},
+		Choices: []Choice{},
+	}
+	if err := writeSSE(w, "data: ", initialResponse); err != nil {
+		return err
+	}
+	flusher.Flush()
+
+	for i := 0; i < 10; i++ {
+		choice := Choice{
+			Message:       Message{Role: "assistant", Content: fmt.Sprintf("Streamed response part %d", i)},
+			Logprobs:      nil,
+			Finish_reason: "stop",
+			Index:         0,
+		}
+		if err := writeSSE(w, "data: ", choice); err != nil {
+			return err
+		}
+		flusher.Flush()
+		time.Sleep(1 * time.Second)
+	}
+
+	if err := writeSSE(w, "event: end", nil); err != nil {
+		return err
+	}
+	flusher.Flush()
+
 	return nil
 }
 
@@ -94,4 +140,12 @@ func randomIdGenerator() string {
 	rand.Seed(seed)
 
 	return fmt.Sprintf("chat.completion-%x", rand.Int63())
+}
+
+func writeSSE(w http.ResponseWriter, prefix string, v any) error {
+	_, err := w.Write([]byte(prefix))
+	if err != nil {
+		return err
+	}
+	return json.NewEncoder(w).Encode(v)
 }
