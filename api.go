@@ -28,6 +28,7 @@ func (s *APIServer) Run() {
 
 	mux.HandleFunc("GET /ping", makeHTTPHandleFunc(s.handlePing))
 	mux.HandleFunc("POST /chat/completions", makeHTTPHandleFunc(s.handleCompletions))
+	mux.HandleFunc("POST /chat/completions/streaming", makeHTTPHandleFunc(s.handleStreamingCompletions))
 
 	log.Println("API server listening on", s.listenAddr)
 	http.ListenAndServe(s.listenAddr, mux)
@@ -68,8 +69,13 @@ func (s *APIServer) handleCompletions(w http.ResponseWriter, r *http.Request) er
 	return WriteJSON(w, http.StatusOK, res)
 }
 
+func (s *APIServer) handleStreamingCompletions(w http.ResponseWriter, r *http.Request) error {
+	return nil
+}
+
 func makeHTTPHandleFunc(f apiFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		log.Println(r.Method, r.URL.Path)
 		if err := f(w, r); err != nil {
 			WriteJSON(w, http.StatusBadRequest, ApiError{Error: err.Error()})
 		}
