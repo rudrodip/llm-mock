@@ -2,10 +2,11 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
+	"math/rand"
 	"net/http"
-
-	"github.com/google/uuid"
+	"time"
 )
 
 type APIServer struct {
@@ -43,7 +44,7 @@ func (s *APIServer) handleCompletions(w http.ResponseWriter, r *http.Request) er
 	}
 
 	res := Response{
-		Id:     uuid.New().String(),
+		Id:     randomIdGenerator(),
 		Object: "chat.completion",
 		Model:  "gpt-3.5-turbo",
 		Usage: Usage{
@@ -80,4 +81,11 @@ func WriteJSON(w http.ResponseWriter, status int, v any) error {
 	w.WriteHeader(status)
 
 	return json.NewEncoder(w).Encode(v)
+}
+
+func randomIdGenerator() string {
+	seed := time.Now().UnixNano()
+	rand.Seed(seed)
+
+	return fmt.Sprintf("chat.completion-%x", rand.Int63())
 }
