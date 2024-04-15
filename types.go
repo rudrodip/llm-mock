@@ -4,7 +4,6 @@ type Request struct {
 	Model       string    `json:"model"`
 	Messages    []Message `json:"messages"`
 	Temperature float32   `json:"temperature"`
-	Streaming   *bool     `json:"streaming"`
 }
 
 type Response struct {
