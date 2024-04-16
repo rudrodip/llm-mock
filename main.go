@@ -10,6 +10,7 @@ func main() {
 	| |__| |__| |\/| |___| |\/| / _ \/ _| / /
 	|____|____|_|  |_|   |_|  |_\___/\__|_\_\
 	`)
+	fmt.Println("Starting API Server...")
 	api := NewAPIServer(":6969")
 	api.Run()
 }
