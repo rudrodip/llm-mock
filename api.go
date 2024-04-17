@@ -25,13 +25,19 @@ func NewAPIServer(listenAddr string) *APIServer {
 
 func (s *APIServer) Run() {
 	mux := http.NewServeMux()
-
 	mux.HandleFunc("GET /ping", makeHTTPHandleFunc(s.handlePing))
 	mux.HandleFunc("POST /chat/completions", makeHTTPHandleFunc(s.handleCompletions))
 	mux.HandleFunc("POST /chat/completions/streaming", makeHTTPHandleFunc(s.handleStreamingCompletions))
 
+	server := &http.Server{
+		Addr:    s.listenAddr,
+		Handler: mux,
+	}
+
 	log.Println("API server listening on", s.listenAddr)
-	http.ListenAndServe(s.listenAddr, mux)
+	if err := server.ListenAndServe(); err != nil {
+		log.Fatalf("Failed to start server: %v", err)
+	}
 }
 
 func (s *APIServer) handlePing(w http.ResponseWriter, r *http.Request) error {
